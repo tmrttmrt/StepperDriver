@@ -19,7 +19,7 @@
  * calculate the step pulse in microseconds for a given rpm value.
  * 60[s/min] * 1000000[us/s] / microsteps / steps / rpm
  */
-#define STEP_PULSE(steps, microsteps, rpm) (60*1000000L/steps/microsteps/rpm)
+#define STEP_PULSE(rpm, microsteps, steps) (60*1000000L/((long)steps*microsteps*rpm))
 
 // don't call yield if we have a wait shorter than this
 #define MIN_YIELD_MICROS 50
@@ -86,11 +86,11 @@ protected:
      */
     struct Profile profile;
 
-    long step_count;        // current position
-    long steps_remaining;   // to complete the current move (absolute value)
+    volatile long step_count;        // current position
+    volatile long steps_remaining;   // to complete the current move (absolute value)
     long steps_to_cruise;   // steps to reach cruising (max) rpm
     long steps_to_brake;    // steps needed to come to a full stop
-    long step_pulse;        // step pulse duration (microseconds)
+    volatile long step_pulse;        // step pulse duration (microseconds)
 
     // DIR pin state
     short dir_state;
@@ -191,6 +191,10 @@ public:
      * Toggle step at the right time and return time until next change is needed (micros)
      */
     long nextAction(void);
+    /*
+     * Toggle step immediately and return time until next change is needed (micros)
+     */
+	long doStep(void);
     /*
      * Optionally, call this to begin braking (and then stop) early
      * For constant speed, this is the same as stop()

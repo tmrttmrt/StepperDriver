@@ -19,7 +19,7 @@
  * calculate the step pulse in microseconds for a given rpm value.
  * 60[s/min] * 1000000[us/s] / microsteps / steps / rpm
  */
-#define STEP_PULSE(steps, microsteps, rpm) (60*1000000L/steps/microsteps/rpm)
+#define STEP_PULSE(rpm, microsteps, steps) (long)(60*1000000L/(steps*microsteps*(float)rpm))
 
 // don't call yield if we have a wait shorter than this
 #define MIN_YIELD_MICROS 50
@@ -55,6 +55,7 @@ private:
     long rest;
     unsigned long last_action_end = 0;
     unsigned long next_action_interval = 0;
+	long long int position = 0;
 
 protected:
     /*
@@ -79,18 +80,18 @@ protected:
     // tWAKE wakeup time, nSLEEP inactive to STEP (us)
     static const int wakeup_time = 0;
 
-    short rpm = 0;
+    float rpm = 0;
 
     /*
      * Movement state
      */
     struct Profile profile;
 
-    long step_count;        // current position
-    long steps_remaining;   // to complete the current move (absolute value)
+    volatile long step_count;        // current position
+    volatile long steps_remaining;   // to complete the current move (absolute value)
     long steps_to_cruise;   // steps to reach cruising (max) rpm
     long steps_to_brake;    // steps needed to come to a full stop
-    long step_pulse;        // step pulse duration (microseconds)
+    volatile long step_pulse;        // step pulse duration (microseconds)
 
     // DIR pin state
     short dir_state;
@@ -113,7 +114,7 @@ public:
     /*
      * Initialize pins, calculate timings etc
      */
-    void begin(short rpm=60, short microsteps=1);
+    void begin(float rpm=60, short microsteps=1);
     /*
      * Set current microstep level, 1=full speed, 32=fine microstepping
      * Returns new level or previous level if value out of range
@@ -128,8 +129,8 @@ public:
     /*
      * Set target motor RPM (1-200 is a reasonable range)
      */
-    void setRPM(short rpm);
-    short getRPM(void){
+    void setRPM(float rpm);
+    float getRPM(void){
         return rpm;
     };
     short getCurrentRPM(void){
@@ -192,6 +193,10 @@ public:
      */
     long nextAction(void);
     /*
+     * Toggle step immediately and return time until next change is needed (micros)
+     */
+	long doStep(void);
+    /*
      * Optionally, call this to begin braking (and then stop) early
      * For constant speed, this is the same as stop()
      */
@@ -218,5 +223,18 @@ public:
     long calcStepsForRotation(double deg){
         return deg * motor_steps * microsteps / 360;
     }
+    /*
+     * Get position in microsteps
+     */
+	long long int getPosition();
+    /*
+     * Get position in degrees
+     */
+	double getAngle();
+    /*
+     * Set current position as origin
+     */
+	void resetOrigin();
+
 };
 #endif // STEPPER_DRIVER_BASE_H

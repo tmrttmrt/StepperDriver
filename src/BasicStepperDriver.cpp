@@ -28,7 +28,7 @@ BasicStepperDriver::BasicStepperDriver(short steps, short dir_pin, short step_pi
 /*
  * Initialize pins, calculate timings etc
  */
-void BasicStepperDriver::begin(short rpm, short microsteps){
+void BasicStepperDriver::begin(float rpm, short microsteps){
     pinMode(dir_pin, OUTPUT);
     digitalWrite(dir_pin, HIGH);
 
@@ -49,7 +49,7 @@ void BasicStepperDriver::begin(short rpm, short microsteps){
 /*
  * Set target motor RPM (1-200 is a reasonable range)
  */
-void BasicStepperDriver::setRPM(short rpm){
+void BasicStepperDriver::setRPM(float rpm){
     if (this->rpm == 0){        // begin() has not been called (old 1.0 code)
         begin(rpm, microsteps);
     }
@@ -123,11 +123,11 @@ void BasicStepperDriver::startMove(long steps){
         switch (profile.mode){
         case LINEAR_SPEED:
             // speed is in [steps/s]
-            speed = rpm * motor_steps / 60;
+            speed = (double)rpm * motor_steps  / 60;
             // how many steps from 0 to target rpm
-            steps_to_cruise = speed * speed * microsteps / (2 * profile.accel);
+            steps_to_cruise = (speed * speed * microsteps) / (2 * profile.accel);
             // how many steps are needed from target rpm to a full stop
-            steps_to_brake = steps_to_cruise * profile.accel / profile.decel;
+            steps_to_brake = (steps_to_cruise * profile.accel) / profile.decel;
             if (steps_remaining < steps_to_cruise + steps_to_brake){
                 // cannot reach max speed, will need to brake early
                 steps_to_cruise = steps_remaining * profile.decel / (profile.accel + profile.decel);
@@ -225,7 +225,7 @@ void BasicStepperDriver::startRotate(double deg){
 }
 
 /*
- * calculate the interval til the next pulse
+ * calculate the interval till the next pulse
  */
 void BasicStepperDriver::calcStepPulse(void){
     if (steps_remaining <= 0){  // this should not happen, but avoids strange calculations
@@ -234,7 +234,7 @@ void BasicStepperDriver::calcStepPulse(void){
 
     steps_remaining--;
     step_count++;
-
+	position += dir_state == HIGH ? 1 : -1;
     if (profile.mode == LINEAR_SPEED){
         switch (getCurrentState()){
         case ACCELERATING:
@@ -285,6 +285,34 @@ long BasicStepperDriver::nextAction(void){
     return next_action_interval;
 }
 
+/*
+ * Generate step with no delays (the caller must take care of timing) 
+ * Toggle step and return time until next change is needed (micros)
+ */
+long BasicStepperDriver::doStep(void){
+    if (steps_remaining > 0){
+        /*
+         * DIR pin is sampled on rising STEP edge, so it is set first
+         */
+        digitalWrite(dir_pin, dir_state);
+        digitalWrite(step_pin, HIGH);
+        unsigned long m = micros();
+        long pulse = step_pulse; // save value because calcStepPulse() will overwrite it
+        calcStepPulse();
+        // We should pull HIGH for 1-2us (step_high_min)
+		while(micros() - m < step_high_min);
+        digitalWrite(step_pin, LOW);
+        // account for calcStepPulse() execution time; sets ceiling for max rpm on slower MCUs
+		m=micros()-m;
+        next_action_interval = (pulse > m) ? pulse - m : 1;
+    } else {
+        // end of move
+        next_action_interval = 0;
+    }
+    return next_action_interval;
+}
+
+
 enum BasicStepperDriver::State BasicStepperDriver::getCurrentState(void){
     enum State state;
     if (steps_remaining <= 0){
@@ -318,4 +346,16 @@ void BasicStepperDriver::disable(void){
 
 short BasicStepperDriver::getMaxMicrostep(){
     return BasicStepperDriver::MAX_MICROSTEP;
+}
+
+long long BasicStepperDriver::getPosition(){
+	return position;
+}
+
+double BasicStepperDriver::getAngle(){
+	return position*360./((long)motor_steps*microsteps);
+}
+
+void BasicStepperDriver::resetOrigin(){
+	position=0;
 }

@@ -28,7 +28,7 @@ BasicStepperDriver::BasicStepperDriver(short steps, short dir_pin, short step_pi
 /*
  * Initialize pins, calculate timings etc
  */
-void BasicStepperDriver::begin(short rpm, short microsteps){
+void BasicStepperDriver::begin(float rpm, short microsteps){
     pinMode(dir_pin, OUTPUT);
     digitalWrite(dir_pin, HIGH);
 
@@ -49,7 +49,7 @@ void BasicStepperDriver::begin(short rpm, short microsteps){
 /*
  * Set target motor RPM (1-200 is a reasonable range)
  */
-void BasicStepperDriver::setRPM(short rpm){
+void BasicStepperDriver::setRPM(float rpm){
     if (this->rpm == 0){        // begin() has not been called (old 1.0 code)
         begin(rpm, microsteps);
     }
@@ -123,7 +123,7 @@ void BasicStepperDriver::startMove(long steps){
         switch (profile.mode){
         case LINEAR_SPEED:
             // speed is in [steps/s]
-            speed = (long)rpm * motor_steps  / 60;
+            speed = (double)rpm * motor_steps  / 60;
             // how many steps from 0 to target rpm
             steps_to_cruise = (speed * speed * microsteps) / (2 * profile.accel);
             // how many steps are needed from target rpm to a full stop
@@ -135,11 +135,6 @@ void BasicStepperDriver::startMove(long steps){
             }
             // Initial pulse (c0) including error correction factor 0.676 [us]
             step_pulse = (1e+6)*0.676*sqrt(2.0f/(profile.accel*microsteps));
-//			calcStepPulse();
-			Serial.print("steps_to_cruise: ");
-			Serial.println(steps_to_cruise);
-			Serial.print("step_pulse: ");
-			Serial.println(step_pulse);
             break;
     
         case CONSTANT_SPEED:
@@ -239,19 +234,17 @@ void BasicStepperDriver::calcStepPulse(void){
 
     steps_remaining--;
     step_count++;
-
+	position += dir_state == HIGH ? 1 : -1;
     if (profile.mode == LINEAR_SPEED){
         switch (getCurrentState()){
         case ACCELERATING:
             step_pulse = step_pulse - (2*step_pulse+rest)/(4*step_count+1);
             rest = (step_count < steps_to_cruise) ? (2*step_pulse+rest) % (4*step_count+1) : 0;
-//			step_pulse = (long)(1000000*sqrt(1./(2*profile.accel*microsteps*step_count)));
             break;
 
         case DECELERATING:
             step_pulse = step_pulse - (2*step_pulse+rest)/(-4*steps_remaining+1);
             rest = (2*step_pulse+rest) % (-4*steps_remaining+1);
-//			step_pulse = (long)(1000000*sqrt(1./(2*profile.accel*microsteps*steps_remaining)));
             break;
 
         default:
@@ -353,4 +346,16 @@ void BasicStepperDriver::disable(void){
 
 short BasicStepperDriver::getMaxMicrostep(){
     return BasicStepperDriver::MAX_MICROSTEP;
+}
+
+long long BasicStepperDriver::getPosition(){
+	return position;
+}
+
+double BasicStepperDriver::getAngle(){
+	return position*360./((long)motor_steps*microsteps);
+}
+
+void BasicStepperDriver::resetOrigin(){
+	position=0;
 }

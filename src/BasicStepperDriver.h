@@ -55,7 +55,7 @@ private:
     long rest;
     unsigned long last_action_end = 0;
     unsigned long next_action_interval = 0;
-	long long int position = 0;
+	long position = 0;
 
 protected:
     /*

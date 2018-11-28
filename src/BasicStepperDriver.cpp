@@ -359,3 +359,7 @@ double BasicStepperDriver::getAngle(){
 void BasicStepperDriver::resetOrigin(){
 	position=0;
 }
+
+int BasicStepperDriver::IsEnabled(){
+	return digitalRead(enable_pin);
+}

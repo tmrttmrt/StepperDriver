@@ -51,8 +51,8 @@ short DRV8825::getMaxMicrostep(){
 /*
  * Enable/Disable the motor by setting a digital flag
  * for DRV8825
- * enable = HIGH
- * disable = LOW
+ * enable = LOW
+ * disable = HIGH
  */
 void DRV8825::enable(void){
     if IS_CONNECTED(enable_pin){

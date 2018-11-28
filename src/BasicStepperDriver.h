@@ -239,6 +239,8 @@ public:
      * Set current position as origin
      */
 	void resetOrigin();
+	
+	int IsEnabled();
 
 };
 #endif // STEPPER_DRIVER_BASE_H

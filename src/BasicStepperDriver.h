@@ -126,6 +126,10 @@ public:
     short getSteps(void){
         return motor_steps;
     }
+    void setSteps(short steps){
+        motor_steps=steps;
+    }
+
     /*
      * Set target motor RPM (1-200 is a reasonable range)
      */

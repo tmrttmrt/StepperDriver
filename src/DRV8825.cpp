@@ -56,12 +56,12 @@ short DRV8825::getMaxMicrostep(){
  */
 void DRV8825::enable(void){
     if IS_CONNECTED(enable_pin){
-        digitalWrite(enable_pin, HIGH);
+        digitalWrite(enable_pin, LOW);
     }
 }
 
 void DRV8825::disable(void){
     if IS_CONNECTED(enable_pin){
-        digitalWrite(enable_pin, LOW);
+        digitalWrite(enable_pin, HIGH);
     }
 }

@@ -348,7 +348,7 @@ short BasicStepperDriver::getMaxMicrostep(){
     return BasicStepperDriver::MAX_MICROSTEP;
 }
 
-long long BasicStepperDriver::getPosition(){
+long BasicStepperDriver::getPosition(){
 	return position;
 }
 

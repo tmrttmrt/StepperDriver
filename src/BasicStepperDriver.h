@@ -230,7 +230,7 @@ public:
     /*
      * Get position in microsteps
      */
-	long long int getPosition();
+	long int getPosition();
     /*
      * Get position in degrees
      */

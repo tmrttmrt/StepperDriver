@@ -61,7 +61,7 @@ protected:
     /*
      * Motor Configuration
      */
-    short motor_steps;           // motor steps per revolution (usually 200)
+    unsigned long motor_steps;           // motor steps per revolution (usually 200)
 
     /*
      * Driver Configuration
@@ -123,10 +123,10 @@ public:
     short getMicrostep(void){
         return microsteps;
     }
-    short getSteps(void){
+    unsigned long getSteps(void){
         return motor_steps;
     }
-    void setSteps(short steps){
+    void setSteps(unsigned long steps){
         motor_steps=steps;
     }
 
